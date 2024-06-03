@@ -1,10 +1,22 @@
-const Contact = require("../models/contacts.js");
+const Contact = require("../models/contact.js");
 const colors = require("colors");
 
-const listContacts = async () => {
+const listContacts = async (page = 1, limit = 5, favorite) => {
   try {
     console.log(colors.bgYellow.italic.bold("--- List Contacts: ---"));
-    return await Contact.find();
+
+    const skip = (page - 1) * limit;
+    const filter = favorite !== undefined ? { favorite } : {};
+
+    const contacts = await Contact.find(filter).skip(skip).limit(limit);
+    const totalContacts = await Contact.countDocuments(filter);
+
+    return {
+      contacts,
+      totalContacts,
+      totalPages: Math.ceil(totalContacts / limit),
+      currentPage: page,
+    };
   } catch (error) {
     console.error(colors.bgRed.italic.bold(error));
     throw new Error(`Error listing contacts: ${error.message}`);
