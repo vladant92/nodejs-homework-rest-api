@@ -1,8 +1,8 @@
 const passport = require("passport");
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.js");
 require("dotenv").config();
+const gravatar = require("gravatar");
 
 const AuthController = {
   signup,
@@ -15,6 +15,7 @@ const secretForToken = process.env.TOKEN_SECRET;
 
 async function signup(data) {
   const { email, password } = data;
+
   if (!email || !password) {
     throw new Error("Email and password are required");
   }
@@ -33,12 +34,16 @@ async function signup(data) {
     throw new Error("Email in use");
   }
 
+  const userAvatar = gravatar.url(email);
+
   const newUser = new User({
-    email: data.email,
+    email: email,
     subscription: "starter",
+    token: null,
+    avatarURL: userAvatar,
   });
 
-  newUser.setPassword(data.password);
+  newUser.setPassword(password);
 
   await newUser.save();
 
@@ -57,7 +62,7 @@ async function login(data) {
     throw new Error("Email or password is wrong");
   }
 
-  const passwordMatch = await bcrypt.compare(password, user.password);
+  const passwordMatch = user.validPassword(password);
   if (!passwordMatch) {
     throw new Error("Email or password is wrong");
   }
@@ -89,8 +94,10 @@ function getPayloadFromJWT(token) {
 }
 
 function validateAuth(req, res, next) {
+  console.log("validateAuth middleware called");
   passport.authenticate("jwt", { session: false }, (err, user) => {
     if (!user || err) {
+      console.log("Unauthorized request"); // Log pentru debugging
       return res.status(401).json({
         status: "error",
         code: 401,
@@ -98,6 +105,7 @@ function validateAuth(req, res, next) {
         data: "Unauthorized",
       });
     }
+    console.log("User authenticated:", user); // Log utilizator autentificat
     req.user = user;
     next();
   })(req, res, next);

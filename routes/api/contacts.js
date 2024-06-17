@@ -1,9 +1,9 @@
 require("../../passport.js");
 
 const express = require("express");
-const colors = require("colors");
 const { STATUS_CODES } = require("../../utils/constants.js");
 const AuthController = require("../../controllers/authController.js");
+const { respondWithError } = require("../../utils/respondWithError.js");
 
 const {
   listContacts,
@@ -15,11 +15,6 @@ const {
 } = require("../../controllers/contactsController.js");
 
 const router = express.Router();
-
-const respondWithError = (res, error) => {
-  console.error(colors.bgRed.italic.bold(error));
-  res.status(STATUS_CODES.error).json({ message: `${error}` });
-};
 
 router.get("/", AuthController.validateAuth, async (req, res, next) => {
   const { page = 1, limit = 5, favorite } = req.query;
